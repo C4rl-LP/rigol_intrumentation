@@ -21,17 +21,24 @@ Este é o pacote principal da biblioteca, contendo a lógica de comunicação e 
 * **[rigol/__init__.py](file:///home/carlos/códigos/rigol_control/rigol/__init__.py)**:
   Arquivo de inicialização que torna a pasta `rigol/` um pacote importável em Python.
 
-### 2. Scripts de Teste e Legado
+### 2. Scripts de Teste
 * **[teste/teste.py](file:///home/carlos/códigos/rigol_control/teste/teste.py)**:
-  Script de demonstração e teste. Ele adiciona o diretório raiz do projeto ao caminho de busca do Python (`sys.path`), conecta-se ao osciloscópio em `/dev/usbtmc0`, lê suas configurações (escala horizontal, escala vertical do canal 1, offset, frequência e Vpp) e exibe os resultados no terminal.
-  
-* **[sl.py](file:///home/carlos/códigos/rigol_control/sl.py)**:
-  Módulo legado com a classe `transporte`, contendo métodos de escrita e leitura de n bits/bytes e blocos binários.
+  Script de demonstração e teste. Ele adiciona o diretório raiz do projeto ao caminho de busca do Python (`sys.path`), conecta-se ao osciloscópio (ex: `/dev/usbtmc0` ou endereço VISA), lê suas configurações (escala horizontal, escala vertical do canal 1, offset, frequência e Vpp) e exibe os resultados no terminal.
 
 ## Pré-requisitos e Instalação
 
-### Permissões de USBTMC
+### No Linux (Interface USBTMC Nativa)
 Para se comunicar com o osciloscópio no Linux via USBTMC (ex: `/dev/usbtmc0`), o usuário atual precisa ter permissões de escrita e leitura no dispositivo correspondente. Isso geralmente é resolvido adicionando o usuário ao grupo `dialout` ou criando uma regra `udev`.
+
+### No Windows ou via VISA
+Para funcionamento em Windows (ou para utilizar comunicação baseada em VISA no Linux), a classe `USBTMCtransporte` detecta automaticamente se:
+- O sistema operacional é Windows (onde não há `/dev/usbtmc*`).
+- O endereço fornecido é um recurso VISA (ex: `USB0::0x1AB1::0x044C::...::INSTR`).
+
+Nesses casos, ela utiliza a biblioteca `pyvisa`. Certifique-se de instalar os pré-requisitos:
+```bash
+pip install pyvisa pyvisa-py
+```
 
 ### Como Executar os Testes
 Para rodar o teste principal, execute o seguinte comando a partir da raiz do projeto:
