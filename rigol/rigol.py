@@ -1,4 +1,4 @@
-from scpi import SCPIInstrument
+from .scpi import SCPIInstrument
 
 
 
