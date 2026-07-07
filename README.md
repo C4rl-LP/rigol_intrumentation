@@ -1,6 +1,6 @@
 # Controle de Osciloscópios Rigol
 
-Este repositório contém uma biblioteca em Python para controle e comunicação com osciloscópios da Rigol utilizando comandos SCPI sobre interface USBTMC.
+Este repositório contém uma biblioteca em Python para controle e comunicação com osciloscópios da Rigol utilizando comandos SCPI. Por hora o projeto funciona apenas para linux. 
 
 ## Estrutura do Projeto
 
