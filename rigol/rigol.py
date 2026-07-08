@@ -1,6 +1,39 @@
 from .scpi import SCPIInstrument
+from dataclasses import dataclass
+from datetime import datetime
+
+try:
+    import numpy as np
+except ImportError:
+    np = None
+
+@dataclass
+class Preamble:
+    format: int
+    wavetype: int
+    points: int
+    count: int
+    xincrement: float
+    xorigin: float
+    xreference: float
+    yincrement: float
+    yorigin: float
+    yreference: float
+
+    @property
+    def sample_rate(self):
+        return 1.0 / self.xincrement
 
 
+@dataclass
+class Waveform:
+    tempo: any
+    tensao: any
+    raw: bytes
+    canal: int
+    modo: str
+    preamble: Preamble
+    timestamp: datetime
 
 
 class RigolScope(SCPIInstrument):
@@ -188,3 +221,60 @@ class RigolScope(SCPIInstrument):
     def get_waveform_raw(self):
 
         return self.query_block(":WAV:DATA?")
+    def read_waveform(self, channel: int, modo: str = "NORM", fmt: str = "BYTE") -> Waveform:
+        
+        if modo.upper() == "RAW":
+            self.stop()
+            self.wait()
+
+        self.set_waveform_source(channel)
+        self.set_waveform_mode(modo)
+        self.set_waveform_format(fmt)
+        preamble_str = self.get_preamble()
+
+        params = preamble_str.split(',')
+        if len(params) < 10:
+            raise RuntimeError("Preâmbulo inválido.")
+        
+        preamblereturn = Preamble(
+            format=int(params[0]),
+            wavetype=int(params[1]),
+            points=int(params[2]),
+            count=int(params[3]),
+            xincrement=float(params[4]),
+            xorigin=float(params[5]),
+            xreference=float(params[6]),
+            yincrement=float(params[7]),
+            yorigin=float(params[8]),
+            yreference=float(params[9]),
+        )
+
+        raw = self.get_waveform_raw()
+
+        if len(raw) == 0:
+            raise RuntimeError("Nenhum dado retornado.")
+
+        if np is not None:
+            raw_array = np.frombuffer(raw, dtype=np.uint8)
+            n_points = min(preamblereturn.points, len(raw_array))
+            raw_array = raw_array[:n_points]
+            
+            tempos = preamblereturn.xorigin + np.arange(n_points) * preamblereturn.xincrement
+            tensoes = (raw_array - preamblereturn.yorigin - preamblereturn.yreference) * preamblereturn.yincrement
+        else:
+            n_points = min(preamblereturn.points, len(raw))
+            tempos = [preamblereturn.xorigin + i * preamblereturn.xincrement for i in range(n_points)]
+            tensoes = [(raw[i] - preamblereturn.yorigin - preamblereturn.yreference) * preamblereturn.yincrement for i in range(n_points)]
+
+        if modo.upper() == "RAW":
+            self.run()
+
+        return Waveform(
+            tempo=tempos,
+            tensao=tensoes,
+            raw=raw,
+            canal=channel,
+            modo=modo,
+            preamble=preamblereturn,
+            timestamp=datetime.now()
+        )

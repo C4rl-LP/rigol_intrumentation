@@ -1,48 +1,68 @@
 # Controle de Osciloscópios Rigol
 
-Este repositório contém uma biblioteca em Python para controle e comunicação com osciloscópios da Rigol utilizando comandos SCPI sobre interface USBTMC.
+Este repositório contém uma biblioteca em Python para controle e comunicação com osciloscópios da Rigol utilizando comandos SCPI sobre interfaces USBTMC e VISA.
 
 ## Estrutura do Projeto
 
 O projeto é dividido nos seguintes módulos e arquivos principais:
 
 ### 1. Pacote `rigol/`
-Este é o pacote principal da biblioteca, contendo a lógica de comunicação e comandos específicos:
+Este é o pacote principal da biblioteca, contendo a lógica de comunicação, comandos específicos e classes utilitárias para aquisição de dados:
 
 * **[rigol/transporte.py](file:///home/carlos/códigos/rigol_control/rigol/transporte.py)**:
-  Contém a classe `USBTMCtransporte`, responsável por abrir a conexão com o dispositivo físico (como `/dev/usbtmc0`), ler/gravar dados puros e processar blocos binários de dados (padrão IEEE 488.2).
+  Contém as classes `USBTMCtransporte` e `VISATransporte`, responsáveis por abrir a conexão física com o dispositivo (como `/dev/usbtmc0` ou recursos VISA) e processar blocos binários de dados IEEE 488.2.
   
 * **[rigol/scpi.py](file:///home/carlos/códigos/rigol_control/rigol/scpi.py)**:
-  Contém a classe base `SCPIInstrument`, que define as operações genéricas de instrumentos SCPI, como gravação de comandos (`write`), consultas (`query`), identificação (`idn`), reinicialização (`reset`) e tratamento básico de erros.
+  Contém a classe base `SCPIInstrument`, que define as operações genéricas de instrumentos SCPI (gravação, consulta, IDN, reset, etc.).
 
 * **[rigol/rigol.py](file:///home/carlos/códigos/rigol_control/rigol/rigol.py)**:
-  Herda de `SCPIInstrument` e implementa a classe `RigolScope`. Esta classe traduz as ações do usuário em comandos SCPI específicos para osciloscópios Rigol (como controle de escala vertical/horizontal, trigger, medição de frequência/tensão e captura de formas de onda em formato bruto/binário).
+  Contém:
+  - `Preamble` (dataclass): Contém os parâmetros do preâmbulo da forma de onda (escala horizontal, escala vertical, offsets, taxa de amostragem, etc.).
+  - `Waveform` (dataclass): Contém os dados estruturados de uma forma de onda capturada (tempo, tensão, bytes brutos, canal, timestamp, etc.).
+  - `RigolScope`: Traduz as ações em comandos SCPI específicos do osciloscópio (escalas, trigger, medições e a função avançada `read_waveform` que realiza o processamento completo de dados brutos para volts/segundos).
+
+* **[rigol/aquisição.py](file:///home/carlos/códigos/rigol_control/rigol/aquisição.py)**:
+  Define a classe `aquisicao`, responsável por simplificar o fluxo de aquisições de ondas do osciloscópio:
+  - `aquisicao_simples(channel)`: Captura e retorna uma `Waveform` para um único canal.
+  - `aquisicao_varios_canais(canais)`: Captura múltiplos canais sequencialmente e retorna um dicionário de mapeamento `{canal: Waveform}`.
 
 * **[rigol/__init__.py](file:///home/carlos/códigos/rigol_control/rigol/__init__.py)**:
-  Arquivo de inicialização que torna a pasta `rigol/` um pacote importável em Python.
+  Arquivo de inicialização que torna a pasta `rigol/` um pacote importável em Python e expõe as classes principais (`RigolScope`, `Waveform`, `Preamble` e `aquisicao`).
 
-### 2. Scripts de Teste
-* **[teste/teste.py](file:///home/carlos/códigos/rigol_control/teste/teste.py)**:
-  Script de demonstração e teste. Ele adiciona o diretório raiz do projeto ao caminho de busca do Python (`sys.path`), conecta-se ao osciloscópio (ex: `/dev/usbtmc0` ou endereço VISA), lê suas configurações (escala horizontal, escala vertical do canal 1, offset, frequência e Vpp) e exibe os resultados no terminal.
+### 2. Exemplos de Uso
+* **[exemplos/teste.py](file:///home/carlos/códigos/rigol_control/exemplos/teste.py)**:
+  Script de teste básico que conecta ao osciloscópio, lê suas configurações (escalas vertical/horizontal, offset) e exibe as estatísticas e medições no terminal.
+
+* **[exemplos/ler_onda.py](file:///home/carlos/códigos/rigol_control/exemplos/ler_onda.py)**:
+  Script prático que demonstra como ler e salvar formas de onda. Ele realiza capturas usando a nova classe `aquisicao`, salva os dados em arquivos CSV estruturados e gera gráficos PNG caso a biblioteca `matplotlib` esteja instalada.
 
 ## Pré-requisitos e Instalação
 
 ### No Linux (Interface USBTMC Nativa)
-Para se comunicar com o osciloscópio no Linux via USBTMC (ex: `/dev/usbtmc0`), o usuário atual precisa ter permissões de escrita e leitura no dispositivo correspondente. Isso geralmente é resolvido adicionando o usuário ao grupo `dialout` ou criando uma regra `udev`.
+Para se comunicar com o osciloscópio no Linux via USBTMC (ex: `/dev/usbtmc0`), o usuário atual precisa ter permissões de escrita e leitura no dispositivo. Isso pode ser feito adicionando o usuário ao grupo `dialout` ou criando uma regra `udev`.
 
-### No Windows ou via VISA
-Para funcionamento em Windows (ou para utilizar comunicação baseada em VISA no Linux), a classe `USBTMCtransporte` detecta automaticamente se:
-- O sistema operacional é Windows (onde não há `/dev/usbtmc*`).
-- O endereço fornecido é um recurso VISA (ex: `USB0::0x1AB1::0x044C::...::INSTR`).
-
-Nesses casos, ela utiliza a biblioteca `pyvisa`. Certifique-se de instalar os pré-requisitos:
+### Via VISA (Linux ou Windows)
+Caso use comunicação baseada em VISA, instale os pré-requisitos:
 ```bash
 pip install pyvisa pyvisa-py
 ```
 
-### Como Executar os Testes
-Para rodar o teste principal, execute o seguinte comando a partir da raiz do projeto:
-
+### Bibliotecas Opcionais de Processamento e Visualização
+Para salvar e exibir gráficos das ondas capturadas automaticamente, é recomendado instalar o `numpy` e o `matplotlib`:
 ```bash
-python3 teste/teste.py
+pip install numpy matplotlib
 ```
+
+## Como Executar os Exemplos
+
+A partir da raiz do projeto, você pode executar os exemplos utilizando o Python do ambiente virtual ou global:
+
+1. **Visualizar configurações e medições básicas:**
+   ```bash
+   python3 exemplos/teste.py
+   ```
+
+2. **Capturar, salvar e plotar formas de onda:**
+   ```bash
+   python3 exemplos/ler_onda.py
+   ```
