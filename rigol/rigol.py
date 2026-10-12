@@ -1,39 +1,8 @@
 from .scpi import SCPIInstrument
 from dataclasses import dataclass
 from datetime import datetime
+from .data_class import Preamble, Waveform
 
-try:
-    import numpy as np
-except ImportError:
-    np = None
-
-@dataclass
-class Preamble:
-    format: int
-    wavetype: int
-    points: int
-    count: int
-    xincrement: float
-    xorigin: float
-    xreference: float
-    yincrement: float
-    yorigin: float
-    yreference: float
-
-    @property
-    def sample_rate(self):
-        return 1.0 / self.xincrement
-
-
-@dataclass
-class Waveform:
-    tempo: any
-    tensao: any
-    raw: bytes
-    canal: int
-    modo: str
-    preamble: Preamble
-    timestamp: datetime
 
 
 class RigolScope(SCPIInstrument):
@@ -187,6 +156,16 @@ class RigolScope(SCPIInstrument):
             self.query(
                 f":MEAS:VRMS? CHAN{channel}"
             )
+        )
+
+    #---------------------------
+    # Médias 
+    #-------------------------
+
+    def get_vmean(self,
+                    channel: int = 1):
+        return float(
+            self.query(f":MEASure:ITEM? VAVG,CHAN{channel}")
         )
 
     # -----------------------

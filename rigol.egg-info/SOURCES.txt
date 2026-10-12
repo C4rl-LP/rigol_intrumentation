@@ -1,0 +1,13 @@
+README.md
+pyproject.toml
+rigol/__init__.py
+rigol/aquisição.py
+rigol/data_class.py
+rigol/rigol.py
+rigol/scpi.py
+rigol/transporte.py
+rigol.egg-info/PKG-INFO
+rigol.egg-info/SOURCES.txt
+rigol.egg-info/dependency_links.txt
+rigol.egg-info/requires.txt
+rigol.egg-info/top_level.txt

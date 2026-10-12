@@ -2,7 +2,7 @@ import sys
 from pathlib import Path
 
 # Adiciona o diretório raiz do projeto ao sys.path para reconhecer o módulo 'rigol'
-sys.path.append(str(Path(__file__).resolve().parent.parent))
+
 
 from rigol.transporte import USBTMCtransporte
 from rigol.rigol import RigolScope
